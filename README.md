@@ -76,7 +76,7 @@ npm run preview → Preview the production build 🌍
 💻 Frontend → (this repo)
 
 
-⚡ Backend → 🔗 [ChatForge Backend API](https://chatforge-backend.onrender.com)  
+⚡ Backend → 🔗 [ChatForge](https://github.com/AlauddinAli/chatforge-backend)
 
 
 ---
