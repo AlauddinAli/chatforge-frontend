@@ -1,3 +1,5 @@
+
+
 // // src/pages/Dashboard.jsx
 // import React, { useState, useEffect, useRef } from "react";
 // import { jwtDecode } from "jwt-decode";
@@ -12,7 +14,9 @@
 //   const [room, setRoom] = useState("general");
 //   const currentUserRef = useRef({ name: "Unknown", id: null });
 
-//   // ✅ Decode token once
+//   const chatEndRef = useRef(null); // 👈 auto-scroll target
+
+//   // decode token once
 //   useEffect(() => {
 //     const token = localStorage.getItem("token");
 //     if (token) {
@@ -27,7 +31,7 @@
 //     }
 //   }, []);
 
-//   // ✅ Join room & set listeners
+//   // join room & listeners
 //   useEffect(() => {
 //     const userName = currentUserRef.current.name;
 //     const userId = currentUserRef.current.id;
@@ -35,17 +39,19 @@
 //     socket.emit("joinRoom", { room, user: userName, userId });
 
 //     const handleRoomMessages = (msgs) => setMessages(msgs || []);
-//     const handleReceive = (msg) =>
-//       setMessages((prev) => [...prev, msg]);
+//     const handleReceive = (msg) => setMessages((prev) => [...prev, msg]);
+
 //     const handleTyping = ({ user }) => {
 //       if (!user || user === userName) return;
 //       setTypingUsers((prev) =>
 //         prev.includes(user) ? prev : [...prev, user]
 //       );
-//       setTimeout(() => {
-//         setTypingUsers((prev) => prev.filter((u) => u !== user));
-//       }, 2000);
+//       setTimeout(
+//         () => setTypingUsers((prev) => prev.filter((u) => u !== user)),
+//         2000
+//       );
 //     };
+
 //     const handleOnline = (users) => setOnlineUsers(users || []);
 
 //     socket.on("roomMessages", handleRoomMessages);
@@ -61,7 +67,38 @@
 //     };
 //   }, [room]);
 
-//   // ✅ Send message
+//   // 👇 auto-scroll when messages update
+//   useEffect(() => {
+//     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+//   }, [messages]);
+
+//   // helper: format timestamp
+//   const formatTime = (dateStr) => {
+//     const date = new Date(dateStr);
+//     const today = new Date();
+//     const yesterday = new Date();
+//     yesterday.setDate(today.getDate() - 1);
+
+//     if (
+//       date.toDateString() === today.toDateString()
+//     ) {
+//       return `Today ${date.toLocaleTimeString([], {
+//         hour: "2-digit",
+//         minute: "2-digit",
+//       })}`;
+//     } else if (
+//       date.toDateString() === yesterday.toDateString()
+//     ) {
+//       return `Yesterday ${date.toLocaleTimeString([], {
+//         hour: "2-digit",
+//         minute: "2-digit",
+//       })}`;
+//     } else {
+//       return date.toLocaleString();
+//     }
+//   };
+
+//   // send message
 //   const handleSend = (e) => {
 //     e.preventDefault();
 //     const text = newMessage.trim();
@@ -74,7 +111,7 @@
 //       userId: currentUserRef.current.id,
 //     };
 
-//     socket.emit("sendMessage", msgData); // server will broadcast
+//     socket.emit("sendMessage", msgData);
 //     setNewMessage("");
 //   };
 
@@ -90,23 +127,43 @@
 //           {messages.map((msg, idx) => (
 //             <div
 //               key={msg._id || idx}
-//               className={`p-2 rounded max-w-[70%] ${
+//               className={`flex items-start gap-2 max-w-[75%] ${
 //                 msg.user === currentUserRef.current.name
-//                   ? "bg-blue-600 self-end text-right ml-auto"
-//                   : "bg-gray-700 text-left"
+//                   ? "ml-auto flex-row-reverse"
+//                   : ""
 //               }`}
 //             >
-//               <div className="text-xs text-gray-300 mb-1">
-//                 <strong>{msg.user}</strong> •{" "}
-//                 {new Date(msg.createdAt).toLocaleTimeString?.() || ""}
+//               {/* Avatar / initials */}
+//               <div
+//                 className={`w-8 h-8 flex items-center justify-center rounded-full font-bold ${
+//                   msg.user === currentUserRef.current.name
+//                     ? "bg-blue-500"
+//                     : "bg-gray-600"
+//                 }`}
+//               >
+//                 {msg.user?.charAt(0).toUpperCase() || "?"}
 //               </div>
-//               <div>{msg.message}</div>
+
+//               <div
+//                 className={`p-2 rounded-lg ${
+//                   msg.user === currentUserRef.current.name
+//                     ? "bg-blue-600 text-right"
+//                     : "bg-gray-700 text-left"
+//                 }`}
+//               >
+//                 <div className="text-xs text-gray-300 mb-1">
+//                   <strong>{msg.user}</strong> •{" "}
+//                   {msg.createdAt ? formatTime(msg.createdAt) : ""}
+//                 </div>
+//                 <div>{msg.message}</div>
+//               </div>
 //             </div>
 //           ))}
+//           <div ref={chatEndRef} /> {/* 👈 scroll anchor */}
 //         </div>
 
-//         {/* Typing */}
-//         <div className="mt-2 text-sm text-gray-300 h-6">
+//         {/* Typing Indicator */}
+//         <div className="mt-2 text-sm italic text-gray-400 h-6">
 //           {typingUsers.length > 0 && (
 //             <div>
 //               {typingUsers.join(", ")}{" "}
@@ -142,6 +199,9 @@
 //   );
 // }
 
+
+
+
 // src/pages/Dashboard.jsx
 import React, { useState, useEffect, useRef } from "react";
 import { jwtDecode } from "jwt-decode";
@@ -154,9 +214,10 @@ export default function Dashboard() {
   const [typingUsers, setTypingUsers] = useState([]);
   const [onlineUsers, setOnlineUsers] = useState([]);
   const [room, setRoom] = useState("general");
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false); // 👈 Mobile sidebar toggle
   const currentUserRef = useRef({ name: "Unknown", id: null });
 
-  const chatEndRef = useRef(null); // 👈 auto-scroll target
+  const chatEndRef = useRef(null);
 
   // decode token once
   useEffect(() => {
@@ -209,7 +270,7 @@ export default function Dashboard() {
     };
   }, [room]);
 
-  // 👇 auto-scroll when messages update
+  // auto-scroll when messages update
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
@@ -221,16 +282,12 @@ export default function Dashboard() {
     const yesterday = new Date();
     yesterday.setDate(today.getDate() - 1);
 
-    if (
-      date.toDateString() === today.toDateString()
-    ) {
+    if (date.toDateString() === today.toDateString()) {
       return `Today ${date.toLocaleTimeString([], {
         hour: "2-digit",
         minute: "2-digit",
       })}`;
-    } else if (
-      date.toDateString() === yesterday.toDateString()
-    ) {
+    } else if (date.toDateString() === yesterday.toDateString()) {
       return `Yesterday ${date.toLocaleTimeString([], {
         hour: "2-digit",
         minute: "2-digit",
@@ -258,18 +315,47 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="flex h-screen bg-gray-900 text-white">
-      <Sidebar room={room} setRoom={setRoom} onlineUsers={onlineUsers} />
+    <div className="flex h-screen bg-gray-900 text-white relative">
+      {/* 🔥 Mobile Overlay - when sidebar is open */}
+      {isSidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+          onClick={() => setIsSidebarOpen(false)}
+        ></div>
+      )}
 
-      <main className="flex-1 p-6 flex flex-col">
-        <h2 className="text-2xl font-bold mb-4">Room: {room} 🚀</h2>
+      {/* 🔥 Sidebar - slides in on mobile */}
+      <Sidebar
+        room={room}
+        setRoom={setRoom}
+        onlineUsers={onlineUsers}
+        isSidebarOpen={isSidebarOpen}
+        setIsSidebarOpen={setIsSidebarOpen}
+      />
+
+      {/* 🔥 Main Chat Area */}
+      <main className="flex-1 p-4 lg:p-6 flex flex-col w-full">
+        {/* 🔥 Header with Hamburger Menu */}
+        <div className="flex items-center justify-between mb-4">
+          {/* Hamburger Button - Only visible on mobile */}
+          <button
+            onClick={() => setIsSidebarOpen(true)}
+            className="lg:hidden text-white text-2xl focus:outline-none"
+          >
+            ☰
+          </button>
+
+          <h2 className="text-xl lg:text-2xl font-bold">Room: {room} 🚀</h2>
+
+          <div className="w-8 lg:hidden"></div> {/* Spacer for centering */}
+        </div>
 
         {/* Messages */}
-        <div className="flex-1 bg-gray-800 rounded-lg p-4 overflow-y-auto space-y-3">
+        <div className="flex-1 bg-gray-800 rounded-lg p-3 lg:p-4 overflow-y-auto space-y-3">
           {messages.map((msg, idx) => (
             <div
               key={msg._id || idx}
-              className={`flex items-start gap-2 max-w-[75%] ${
+              className={`flex items-start gap-2 max-w-[85%] lg:max-w-[75%] ${
                 msg.user === currentUserRef.current.name
                   ? "ml-auto flex-row-reverse"
                   : ""
@@ -277,7 +363,7 @@ export default function Dashboard() {
             >
               {/* Avatar / initials */}
               <div
-                className={`w-8 h-8 flex items-center justify-center rounded-full font-bold ${
+                className={`w-7 h-7 lg:w-8 lg:h-8 flex items-center justify-center rounded-full font-bold text-sm ${
                   msg.user === currentUserRef.current.name
                     ? "bg-blue-500"
                     : "bg-gray-600"
@@ -287,7 +373,7 @@ export default function Dashboard() {
               </div>
 
               <div
-                className={`p-2 rounded-lg ${
+                className={`p-2 lg:p-3 rounded-lg text-sm lg:text-base ${
                   msg.user === currentUserRef.current.name
                     ? "bg-blue-600 text-right"
                     : "bg-gray-700 text-left"
@@ -297,15 +383,15 @@ export default function Dashboard() {
                   <strong>{msg.user}</strong> •{" "}
                   {msg.createdAt ? formatTime(msg.createdAt) : ""}
                 </div>
-                <div>{msg.message}</div>
+                <div className="break-words">{msg.message}</div>
               </div>
             </div>
           ))}
-          <div ref={chatEndRef} /> {/* 👈 scroll anchor */}
+          <div ref={chatEndRef} />
         </div>
 
         {/* Typing Indicator */}
-        <div className="mt-2 text-sm italic text-gray-400 h-6">
+        <div className="mt-2 text-xs lg:text-sm italic text-gray-400 h-5 lg:h-6">
           {typingUsers.length > 0 && (
             <div>
               {typingUsers.join(", ")}{" "}
@@ -315,7 +401,7 @@ export default function Dashboard() {
         </div>
 
         {/* Input */}
-        <form onSubmit={handleSend} className="flex mt-4">
+        <form onSubmit={handleSend} className="flex mt-3 lg:mt-4">
           <input
             type="text"
             placeholder="Type a message..."
@@ -327,11 +413,11 @@ export default function Dashboard() {
                 user: currentUserRef.current.name,
               });
             }}
-            className="flex-1 p-2 rounded-l bg-gray-700 text-white focus:outline-none"
+            className="flex-1 p-2 lg:p-3 text-sm lg:text-base rounded-l bg-gray-700 text-white focus:outline-none"
           />
           <button
             type="submit"
-            className="bg-blue-600 hover:bg-blue-700 px-4 rounded-r"
+            className="bg-blue-600 hover:bg-blue-700 px-4 lg:px-6 rounded-r text-sm lg:text-base font-semibold"
           >
             Send
           </button>
