@@ -263,7 +263,7 @@ function App() {
   return (
     <div className="bg-gray-900 min-h-screen text-white">
       {/* Navbar */}
-      <nav className="flex justify-between items-center backdrop-blur-xl bg-gray-800/80 px-4 lg:px-6 py-3 lg:py-4 shadow-md border-b border-white/10 fixed w-full z-50">
+      <nav className="flex justify-between items-center backdrop-blur-xl bg-gray-800/80 px-4 lg:px-6 py-3 lg:py-4 shadow-md border-b border-white/10 fixed w-full z-50 top-0">
         {/* Left: Logo + Links */}
         <div className="flex items-center gap-3 lg:gap-4">
           <Link to="/" className="text-lg lg:text-xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent hover:scale-105 transition-transform">
