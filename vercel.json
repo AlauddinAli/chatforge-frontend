@@ -1,0 +1,11 @@
+{
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
+
+// Save this as vercel.json in your chatforge-frontend root folder
+// (same level as package.json, vite.config.js, etc.)
