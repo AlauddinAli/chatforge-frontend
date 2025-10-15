@@ -18,9 +18,13 @@
 //   const [contextMenu, setContextMenu] = useState(null);
 //   const [uploadingFile, setUploadingFile] = useState(false);
 //   const [selectedFile, setSelectedFile] = useState(null);
+//   const [loadingMore, setLoadingMore] = useState(false);
+//   const [hasMore, setHasMore] = useState(true);
 //   const currentUserRef = useRef({ name: "Unknown", id: null });
 //   const chatEndRef = useRef(null);
+//   const chatContainerRef = useRef(null);
 //   const fileInputRef = useRef(null);
+//   const oldestMessageId = useRef(null);
 
 //   useEffect(() => {
 //     const token = localStorage.getItem("token");
@@ -40,17 +44,31 @@
 //     const userId = currentUserRef.current.id;
 //     socket.emit("joinRoom", { room, user: userName, userId });
 
-//     const handleRoomMessages = (msgs) => setMessages(msgs || []);
-//     const handleReceive = (msg) => setMessages((prev) => [...prev, msg]);
+//     const handleRoomMessages = (msgs) => {
+//       setMessages(msgs || []);
+//       setHasMore(msgs.length >= 50);
+//       if (msgs.length > 0) {
+//         oldestMessageId.current = msgs[0]._id;
+//       }
+//     };
+    
+//     const handleReceive = (msg) => {
+//       setMessages((prev) => [...prev, msg]);
+//       setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
+//     };
+    
 //     const handleTyping = ({ user }) => {
 //       if (!user || user === userName) return;
 //       setTypingUsers((prev) => (prev.includes(user) ? prev : [...prev, user]));
 //       setTimeout(() => setTypingUsers((prev) => prev.filter((u) => u !== user)), 2000);
 //     };
+    
 //     const handleOnline = (users) => setOnlineUsers(users || []);
+    
 //     const handleMessageDeleted = ({ messageId }) => {
 //       setMessages((prev) => prev.filter((msg) => msg._id !== messageId));
 //     };
+    
 //     const handleMessageEdited = ({ messageId, newMessage }) => {
 //       setMessages((prev) =>
 //         prev.map((msg) => (msg._id === messageId ? { ...msg, message: newMessage, edited: true } : msg))
@@ -75,8 +93,42 @@
 //   }, [room]);
 
 //   useEffect(() => {
-//     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+//     if (messages.length > 0) {
+//       chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+//     }
 //   }, [messages]);
+
+//   const handleScroll = async () => {
+//     const container = chatContainerRef.current;
+//     if (!container || loadingMore || !hasMore) return;
+
+//     if (container.scrollTop === 0) {
+//       setLoadingMore(true);
+//       const prevHeight = container.scrollHeight;
+
+//       try {
+//         const response = await api.get(`/messages/${room}?before=${oldestMessageId.current}&limit=50`);
+//         const olderMessages = response.data;
+
+//         if (olderMessages.length > 0) {
+//           setMessages((prev) => [...olderMessages, ...prev]);
+//           oldestMessageId.current = olderMessages[0]._id;
+          
+//           setTimeout(() => {
+//             container.scrollTop = container.scrollHeight - prevHeight;
+//           }, 100);
+//         }
+
+//         if (olderMessages.length < 50) {
+//           setHasMore(false);
+//         }
+//       } catch (err) {
+//         console.error("Error loading more messages:", err);
+//       } finally {
+//         setLoadingMore(false);
+//       }
+//     }
+//   };
 
 //   useEffect(() => {
 //     const handleClick = () => setContextMenu(null);
@@ -168,8 +220,14 @@
 
 //   const handleContextMenu = (e, msg) => {
 //     e.preventDefault();
-//     if (msg.user === currentUserRef.current.name && !msg.fileUrl) {
-//       setContextMenu({ x: e.clientX, y: e.clientY, messageId: msg._id, message: msg.message });
+//     if (msg.user === currentUserRef.current.name) {
+//       setContextMenu({ 
+//         x: e.clientX, 
+//         y: e.clientY, 
+//         messageId: msg._id, 
+//         message: msg.message,
+//         hasFile: !!msg.fileUrl 
+//       });
 //     }
 //   };
 
@@ -213,18 +271,29 @@
 
 //       <Sidebar room={room} setRoom={setRoom} onlineUsers={onlineUsers} isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />
 
-//       <main className="flex-1 flex flex-col w-full relative z-10 pt-16 lg:pt-20">
-//         {/* Separate Room Header Div */}
-//         <div className="flex items-center justify-between backdrop-blur-xl bg-white/5 p-4 md:p-5 border-b border-white/10 shadow-xl">
-//           <button onClick={() => setIsSidebarOpen(true)} className="lg:hidden text-white text-xl md:text-2xl focus:outline-none hover:text-blue-400 transition p-2">☰</button>
-//           <h2 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent truncate flex-1 text-center lg:text-left">
+//       <main className="flex-1 flex flex-col w-full relative z-10 pt-[72px] lg:pt-20">
+//         {/* Fixed room header - stays at top, below main navbar */}
+//         <div className="fixed top-16 lg:top-20 left-0 lg:left-64 right-0 z-30 flex items-center justify-between backdrop-blur-xl bg-gray-800/90 p-3 md:p-4 border-b border-white/20 shadow-xl pointer-events-auto">
+//           <button onClick={() => setIsSidebarOpen(true)} className="lg:hidden text-white text-xl md:text-2xl focus:outline-none hover:text-blue-400 transition p-2">
+//             ☰
+//           </button>
+//           <h2 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent truncate flex-1 text-center lg:text-left px-2">
 //             Room: {room} 🚀
 //           </h2>
 //           <div className="w-10 lg:hidden"></div>
 //         </div>
 
-//         {/* Separate Messages Container Div */}
-//         <div className="flex-1 overflow-y-auto overscroll-contain px-2 sm:px-4 md:px-6 py-4 space-y-3 md:space-y-4">
+//         <div 
+//           ref={chatContainerRef}
+//           onScroll={handleScroll}
+//           className="flex-1 overflow-y-auto overscroll-contain px-2 sm:px-4 md:px-6 py-4 space-y-3 md:space-y-4"
+//         >
+//           {loadingMore && (
+//             <div className="text-center py-2">
+//               <div className="inline-block w-6 h-6 border-2 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
+//             </div>
+//           )}
+          
 //           {messages.map((msg, idx) => {
 //             const isOwn = msg.user === currentUserRef.current.name;
 //             const isEditing = editingMessageId === msg._id;
@@ -241,10 +310,10 @@
 
 //                 <div className={`group relative backdrop-blur-md rounded-xl md:rounded-2xl p-3 md:p-4 text-sm md:text-base shadow-xl border transition-all ${isOwn ? "bg-gradient-to-br from-blue-500/30 to-purple-500/30 border-blue-400/30 text-right" : "bg-white/10 border-white/20 text-left"}`}>
 //                   <div className="text-[10px] md:text-xs text-gray-300 mb-1 flex flex-wrap items-center gap-1 md:gap-2">
-//                     <strong className="text-blue-300 truncate max-w-[100px] sm:max-w-none">{msg.user}</strong>
+//                     <strong className="text-blue-300 break-words max-w-full">{msg.user}</strong>
 //                     <span className="opacity-70">•</span>
-//                     <span className="opacity-70 text-[10px] md:text-xs">{msg.createdAt ? formatTime(msg.createdAt) : ""}</span>
-//                     {msg.edited && <span className="text-[10px] md:text-xs italic text-purple-300">(edited)</span>}
+//                     <span className="opacity-70 text-[10px] md:text-xs whitespace-nowrap">{msg.createdAt ? formatTime(msg.createdAt) : ""}</span>
+//                     {msg.edited && <span className="text-[10px] md:text-xs italic text-purple-300 whitespace-nowrap">(edited)</span>}
 //                   </div>
 
 //                   {msg.fileUrl ? (
@@ -255,12 +324,12 @@
 //                         </a>
 //                       ) : (
 //                         <a href={msg.fileUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 md:gap-3 bg-white/10 p-2 md:p-3 rounded-lg hover:bg-white/20 transition">
-//                           <div className="text-2xl md:text-4xl">{msg.fileType === "pdf" ? "📄" : "📁"}</div>
+//                           <div className="text-2xl md:text-4xl flex-shrink-0">{msg.fileType === "pdf" ? "📄" : "📁"}</div>
 //                           <div className="flex-1 min-w-0">
-//                             <div className="font-semibold truncate text-xs md:text-sm">{msg.fileName}</div>
-//                             <div className="text-[10px] md:text-xs text-gray-400">{formatFileSize(msg.fileSize)}</div>
+//                             <div className="font-semibold break-words text-xs md:text-sm">{msg.fileName}</div>
+//                             <div className="text-[10px] md:text-xs text-gray-400 mt-1">{formatFileSize(msg.fileSize)}</div>
 //                           </div>
-//                           <div className="text-blue-400">⬇️</div>
+//                           <div className="text-blue-400 flex-shrink-0">⬇️</div>
 //                         </a>
 //                       )}
 //                       {msg.message && <div className="mt-2 break-words text-sm md:text-base">{msg.message}</div>}
@@ -287,9 +356,11 @@
 //                     <div className="break-words text-sm md:text-base">{msg.message}</div>
 //                   )}
 
-//                   {isOwn && !isEditing && !msg.fileUrl && (
+//                   {isOwn && !isEditing && (
 //                     <div className="absolute -top-2 right-2 hidden group-hover:flex gap-1 bg-gray-800/90 backdrop-blur-sm rounded-lg p-1 shadow-lg border border-white/20">
-//                       <button onClick={() => startEdit(msg._id, msg.message)} className="px-1.5 md:px-2 py-1 hover:bg-blue-500/50 rounded text-xs transition" title="Edit">✏️</button>
+//                       {!msg.fileUrl && (
+//                         <button onClick={() => startEdit(msg._id, msg.message)} className="px-1.5 md:px-2 py-1 hover:bg-blue-500/50 rounded text-xs transition" title="Edit">✏️</button>
+//                       )}
 //                       <button onClick={() => handleDelete(msg._id)} className="px-1.5 md:px-2 py-1 hover:bg-red-500/50 rounded text-xs transition" title="Delete">🗑️</button>
 //                     </div>
 //                   )}
@@ -302,7 +373,9 @@
 
 //         {contextMenu && (
 //           <div className="fixed bg-gray-800/95 backdrop-blur-md rounded-lg shadow-2xl border border-white/20 py-2 z-50" style={{ top: contextMenu.y, left: Math.min(contextMenu.x, window.innerWidth - 200) }} onClick={(e) => e.stopPropagation()}>
-//             <button onClick={() => startEdit(contextMenu.messageId, contextMenu.message)} className="w-full px-4 py-2 text-left hover:bg-blue-500/30 transition text-sm flex items-center gap-2">✏️ Edit Message</button>
+//             {!contextMenu.hasFile && (
+//               <button onClick={() => startEdit(contextMenu.messageId, contextMenu.message)} className="w-full px-4 py-2 text-left hover:bg-blue-500/30 transition text-sm flex items-center gap-2">✏️ Edit Message</button>
+//             )}
 //             <button onClick={() => handleDelete(contextMenu.messageId)} className="w-full px-4 py-2 text-left hover:bg-red-500/30 transition text-sm flex items-center gap-2 text-red-400">🗑️ Delete Message</button>
 //           </div>
 //         )}
@@ -311,7 +384,7 @@
 //           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 px-4">
 //             <div className="bg-gray-800/95 backdrop-blur-xl rounded-2xl p-4 md:p-6 max-w-sm w-full border border-white/20 shadow-2xl">
 //               <h3 className="text-lg md:text-xl font-bold mb-3 md:mb-4">Delete Message?</h3>
-//               <p className="text-sm md:text-base text-gray-300 mb-4 md:mb-6">This action cannot be undone.</p>
+//               <p className="text-sm md:text-base text-gray-300 mb-4 md:mb-6">This will delete the message {messages.find(m => m._id === showDeleteConfirm)?.fileUrl ? "and file " : ""}permanently.</p>
 //               <div className="flex gap-2 md:gap-3">
 //                 <button onClick={confirmDelete} className="flex-1 bg-red-500/80 hover:bg-red-500 py-2 rounded-lg font-semibold transition text-sm md:text-base">Delete</button>
 //                 <button onClick={() => setShowDeleteConfirm(null)} className="flex-1 bg-gray-600/80 hover:bg-gray-600 py-2 rounded-lg font-semibold transition text-sm md:text-base">Cancel</button>
@@ -320,7 +393,6 @@
 //           </div>
 //         )}
 
-//         {/* Typing indicator */}
 //         <div className="px-2 sm:px-4 md:px-6 pb-2 text-xs md:text-sm italic text-purple-300 min-h-[20px]">
 //           {typingUsers.length > 0 && (
 //             <div className="flex items-center gap-2">
@@ -334,7 +406,6 @@
 //           )}
 //         </div>
 
-//         {/* File preview */}
 //         {selectedFile && (
 //           <div className="px-2 sm:px-4 md:px-6 pb-2">
 //             <div className="flex items-center gap-2 md:gap-3 rounded-xl md:rounded-2xl backdrop-blur-xl bg-white/10 border border-white/20 p-2 md:p-3 shadow-xl">
@@ -342,9 +413,7 @@
 //                 {selectedFile.type?.startsWith("image/") ? "🖼️" : selectedFile.type === "application/pdf" ? "📄" : "📁"}
 //               </div>
 //               <div className="min-w-0 flex-1">
-//                 <div className="truncate font-semibold text-xs md:text-sm">
-//                   {selectedFile.name}
-//                 </div>
+//                 <div className="break-words font-semibold text-xs md:text-sm">{selectedFile.name}</div>
 //                 <div className="text-[10px] md:text-xs text-gray-300">{formatFileSize(selectedFile.size)}</div>
 //                 {uploadingFile && (
 //                   <div className="mt-1 h-1 md:h-1.5 w-full overflow-hidden rounded bg-white/10">
@@ -352,45 +421,16 @@
 //                   </div>
 //                 )}
 //               </div>
-//               <button
-//                 onClick={() => { setSelectedFile(null); fileInputRef.current.value = ""; }}
-//                 className="ml-2 rounded-lg bg-white/10 px-2 py-1 text-xs md:text-sm text-red-300 hover:bg-white/20 transition flex-shrink-0"
-//                 title="Remove file"
-//               >
-//                 ✕
-//               </button>
+//               <button onClick={() => { setSelectedFile(null); fileInputRef.current.value = ""; }} className="ml-2 rounded-lg bg-white/10 px-2 py-1 text-xs md:text-sm text-red-300 hover:bg-white/20 transition flex-shrink-0">✕</button>
 //             </div>
 //           </div>
 //         )}
 
-//         {/* Input form */}
 //         <form onSubmit={handleSend} className="flex gap-2 px-2 sm:px-4 md:px-6 pb-3 md:pb-4">
 //           <input type="file" ref={fileInputRef} onChange={handleFileSelect} className="hidden" accept="image/*,.pdf,.doc,.docx,.txt,.zip" />
-//           <button 
-//             type="button" 
-//             onClick={() => fileInputRef.current?.click()} 
-//             disabled={uploadingFile} 
-//             className="p-2.5 md:p-3 lg:p-4 backdrop-blur-xl bg-white/10 border border-white/20 rounded-xl md:rounded-2xl hover:bg-white/20 transition disabled:opacity-50 flex-shrink-0 text-lg md:text-xl" 
-//             title="Attach file"
-//           >
-//             📎
-//           </button>
-//           <input 
-//             type="text" 
-//             placeholder={selectedFile ? "Caption (optional)..." : "Message..."} 
-//             value={newMessage} 
-//             onChange={(e) => { 
-//               setNewMessage(e.target.value); 
-//               socket.emit("typing", { room, user: currentUserRef.current.name }); 
-//             }} 
-//             disabled={uploadingFile} 
-//             className="flex-1 min-w-0 p-2.5 md:p-3 lg:p-4 text-sm md:text-base rounded-xl md:rounded-2xl backdrop-blur-xl bg-white/10 border border-white/20 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400 transition shadow-xl disabled:opacity-50" 
-//           />
-//           <button 
-//             type="submit" 
-//             disabled={uploadingFile || (!newMessage.trim() && !selectedFile)} 
-//             className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 px-4 md:px-6 lg:px-8 rounded-xl md:rounded-2xl text-sm md:text-base font-semibold shadow-xl transition-all hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
-//           >
+//           <button type="button" onClick={() => fileInputRef.current?.click()} disabled={uploadingFile} className="p-2.5 md:p-3 lg:p-4 backdrop-blur-xl bg-white/10 border border-white/20 rounded-xl md:rounded-2xl hover:bg-white/20 transition disabled:opacity-50 flex-shrink-0 text-lg md:text-xl" title="Attach file">📎</button>
+//           <input type="text" placeholder={selectedFile ? "Caption (optional)..." : "Message..."} value={newMessage} onChange={(e) => { setNewMessage(e.target.value); socket.emit("typing", { room, user: currentUserRef.current.name }); }} disabled={uploadingFile} className="flex-1 min-w-0 p-2.5 md:p-3 lg:p-4 text-sm md:text-base rounded-xl md:rounded-2xl backdrop-blur-xl bg-white/10 border border-white/20 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400 transition shadow-xl disabled:opacity-50" />
+//           <button type="submit" disabled={uploadingFile || (!newMessage.trim() && !selectedFile)} className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 px-4 md:px-6 lg:px-8 rounded-xl md:rounded-2xl text-sm md:text-base font-semibold shadow-xl transition-all hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0">
 //             {uploadingFile ? "⏳" : "Send"}
 //           </button>
 //         </form>
@@ -408,7 +448,8 @@
 //     </div>
 //   );
 // }
-////////UPDATEDDDDDDDDDDDDDD!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
 // src/pages/Dashboard.jsx
 import React, { useState, useEffect, useRef } from "react";
 import { jwtDecode } from "jwt-decode";
@@ -503,14 +544,12 @@ export default function Dashboard() {
     };
   }, [room]);
 
-  // Auto-scroll to bottom on new messages
   useEffect(() => {
     if (messages.length > 0) {
       chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages]);
 
-  // Load more messages on scroll
   const handleScroll = async () => {
     const container = chatContainerRef.current;
     if (!container || loadingMore || !hasMore) return;
@@ -684,9 +723,9 @@ export default function Dashboard() {
 
       <Sidebar room={room} setRoom={setRoom} onlineUsers={onlineUsers} isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />
 
-      <main className="flex-1 flex flex-col w-full relative z-10">
-        {/* STICKY Room Header */}
-        <div className="sticky top-0 z-30 flex items-center justify-between backdrop-blur-xl bg-gray-800/90 p-3 md:p-4 border-b border-white/20 shadow-xl">
+      <main className="flex-1 flex flex-col w-full relative z-10 lg:ml-64">
+        {/* Fixed room header - stays at top, below main navbar */}
+        <div className="fixed top-16 left-0 lg:left-64 right-0 z-30 flex items-center justify-between backdrop-blur-xl bg-gray-800/90 p-3 md:p-4 border-b border-white/20 shadow-xl pointer-events-auto">
           <button onClick={() => setIsSidebarOpen(true)} className="lg:hidden text-white text-xl md:text-2xl focus:outline-none hover:text-blue-400 transition p-2">
             ☰
           </button>
@@ -696,11 +735,10 @@ export default function Dashboard() {
           <div className="w-10 lg:hidden"></div>
         </div>
 
-        {/* Messages Container with scroll */}
         <div 
           ref={chatContainerRef}
           onScroll={handleScroll}
-          className="flex-1 overflow-y-auto overscroll-contain px-2 sm:px-4 md:px-6 py-4 space-y-3 md:space-y-4"
+          className="flex-1 overflow-y-auto overscroll-contain px-2 sm:px-4 md:px-6 py-4 space-y-3 md:space-y-4 mt-[72px]"
         >
           {loadingMore && (
             <div className="text-center py-2">
