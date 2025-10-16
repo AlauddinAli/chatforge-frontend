@@ -1,4 +1,4 @@
-// // src/pages/Dashboard.jsx
+// // src/pages/Dashboard.jsx - WITH THREADED REPLIES DISPLAY!
 // import React, { useState, useEffect, useRef } from "react";
 // import { jwtDecode } from "jwt-decode";
 // import { socket } from "../socket";
@@ -22,12 +22,8 @@
 //   const [selectedFile, setSelectedFile] = useState(null);
 //   const [loadingMore, setLoadingMore] = useState(false);
 //   const [hasMore, setHasMore] = useState(true);
-  
-//   // 🔥 Reaction states
 //   const [showReactionPicker, setShowReactionPicker] = useState(null);
 //   const [messageReactions, setMessageReactions] = useState({});
-  
-//   // 🔥 Reply/Thread states
 //   const [replyingTo, setReplyingTo] = useState(null);
   
 //   const currentUserRef = useRef({ name: "Unknown", id: null });
@@ -43,6 +39,7 @@
 //         const decoded = jwtDecode(token);
 //         currentUserRef.current.name = decoded.name || decoded.email || "Unknown";
 //         currentUserRef.current.id = decoded.id || decoded._id || null;
+//         console.log("✅ User ID:", currentUserRef.current.id);
 //       } catch (err) {
 //         console.error("JWT decode failed:", err);
 //       }
@@ -60,7 +57,6 @@
 //       if (msgs.length > 0) {
 //         oldestMessageId.current = msgs[0]._id;
 //       }
-      
 //       const reactionsMap = {};
 //       msgs.forEach(msg => {
 //         if (msg.reactions) {
@@ -102,6 +98,7 @@
 //     };
     
 //     const handleMessageReaction = ({ messageId, reactions }) => {
+//       console.log("🎉 Reaction received for", messageId, reactions);
 //       setMessageReactions(prev => ({ ...prev, [messageId]: reactions }));
 //       setMessages(prev => prev.map(msg => 
 //         msg._id === messageId ? { ...msg, reactions } : msg
@@ -235,12 +232,10 @@
 
 //       if (replyingTo) {
 //         msgData.replyTo = replyingTo._id;
-//         socket.emit("sendReply", msgData);
-//         setReplyingTo(null);
-//       } else {
-//         socket.emit("sendMessage", msgData);
 //       }
       
+//       socket.emit("sendMessage", msgData);
+//       setReplyingTo(null);
 //       setSelectedFile(null);
 //       setNewMessage("");
 //       fileInputRef.current.value = "";
@@ -269,12 +264,10 @@
 
 //     if (replyingTo) {
 //       msgData.replyTo = replyingTo._id;
-//       socket.emit("sendReply", msgData);
-//       setReplyingTo(null);
-//     } else {
-//       socket.emit("sendMessage", msgData);
 //     }
-
+    
+//     socket.emit("sendMessage", msgData);
+//     setReplyingTo(null);
 //     setNewMessage("");
 //   };
 
@@ -323,7 +316,12 @@
 
 //   const handleAddReaction = (messageId, emoji) => {
 //     const userId = currentUserRef.current.id;
-//     if (!userId) return;
+//     if (!userId) {
+//       console.error("❌ No user ID!");
+//       alert("Error: Please log out and log in again");
+//       return;
+//     }
+//     console.log("✅ Sending reaction:", { messageId, emoji, userId, room });
 //     socket.emit("addReaction", { messageId, emoji, userId, room });
 //     setShowReactionPicker(null);
 //   };
@@ -370,135 +368,153 @@
 //           )}
           
 //           {messages.map((msg, idx) => {
-//   const isOwn = msg.user === currentUserRef.current.name;
-//   const isEditing = editingMessageId === msg._id;
-//   const reactions = messageReactions[msg._id] || msg.reactions || {};
-//   const hasReactions = Object.keys(reactions).length > 0;
+//             const isOwn = msg.user === currentUserRef.current.name;
+//             const isEditing = editingMessageId === msg._id;
+//             const reactions = messageReactions[msg._id] || msg.reactions || {};
+//             const hasReactions = Object.keys(reactions).length > 0;
 
-//   return (
-//     <div
-//       key={msg._id || idx}
-//       className={`flex items-start gap-2 md:gap-3 max-w-[95%] sm:max-w-[85%] md:max-w-[80%] lg:max-w-[70%] animate-slideIn ${isOwn ? "ml-auto flex-row-reverse" : ""}`}
-//       onContextMenu={(e) => handleContextMenu(e, msg)}
-//     >
-//       <div className={`w-8 h-8 md:w-9 md:h-9 flex-shrink-0 flex items-center justify-center rounded-full font-bold text-xs md:text-sm shadow-lg ${isOwn ? "bg-gradient-to-br from-blue-500 to-purple-500" : "bg-gradient-to-br from-gray-600 to-gray-700"}`}>
-//         {msg.user?.charAt(0).toUpperCase() || "?"}
-//       </div>
-
-//       <div className={`group relative rounded-xl md:rounded-2xl p-3 md:p-4 text-sm md:text-base shadow-xl transition-all ${isOwn ? theme.colors.bgMessageOwn + " text-right" : theme.colors.bgMessageOther + " text-left"}`}>
-//         <div className={`text-[10px] md:text-xs ${theme.colors.textSecondary} mb-1 flex flex-wrap items-center gap-1 md:gap-2`}>
-//           <strong className="text-blue-300 break-words max-w-full">{msg.user}</strong>
-//           <span className="opacity-70">•</span>
-//           <span className="opacity-70 text-[10px] md:text-xs whitespace-nowrap">{msg.createdAt ? formatTime(msg.createdAt) : ""}</span>
-//           {msg.edited && <span className="text-[10px] md:text-xs italic text-purple-300 whitespace-nowrap">(edited)</span>}
-//           {msg.replyTo && <span className="text-[10px] text-blue-300">↩️</span>}
-//         </div>
-
-//         {msg.fileUrl ? (
-//           <div className="mt-2">
-//             {msg.fileType === "image" ? (
-//               <a href={msg.fileUrl} target="_blank" rel="noopener noreferrer">
-//                 <img src={msg.fileUrl} alt={msg.fileName} className="max-w-full max-h-48 md:max-h-64 rounded-lg hover:opacity-90 transition" />
-//               </a>
-//             ) : (
-//               <a href={msg.fileUrl} target="_blank" rel="noopener noreferrer" className={`flex items-center gap-2 md:gap-3 ${theme.colors.bgInput} p-2 md:p-3 rounded-lg hover:bg-white/20 transition`}>
-//                 <div className="text-2xl md:text-4xl flex-shrink-0">{msg.fileType === "pdf" ? "📄" : "📁"}</div>
-//                 <div className="flex-1 min-w-0">
-//                   <div className="font-semibold break-words text-xs md:text-sm">{msg.fileName}</div>
-//                   <div className={`text-[10px] md:text-xs ${theme.colors.textMuted} mt-1`}>{formatFileSize(msg.fileSize)}</div>
-//                 </div>
-//                 <div className="text-blue-400 flex-shrink-0">⬇️</div>
-//               </a>
-//             )}
-//             {msg.message && <div className="mt-2 break-words text-sm md:text-base">{msg.message}</div>}
-//           </div>
-//         ) : isEditing ? (
-//           <div className="space-y-2">
-//             <input 
-//               type="text" 
-//               value={editText} 
-//               onChange={(e) => setEditText(e.target.value)} 
-//               className={`w-full bg-white/20 ${theme.colors.borderPrimary} border rounded-lg px-2 md:px-3 py-1.5 md:py-2 ${theme.colors.textPrimary} text-sm md:text-base focus:outline-none focus:ring-2 focus:ring-blue-400`}
-//               autoFocus 
-//               onKeyDown={(e) => { 
-//                 if (e.key === "Enter") saveEdit(msg._id); 
-//                 if (e.key === "Escape") cancelEdit(); 
-//               }} 
-//             />
-//             <div className="flex gap-2 justify-end">
-//               <button onClick={() => saveEdit(msg._id)} className="px-2 md:px-3 py-1 bg-green-500/80 hover:bg-green-500 rounded-lg text-[10px] md:text-xs font-semibold transition">Save</button>
-//               <button onClick={cancelEdit} className="px-2 md:px-3 py-1 bg-gray-500/80 hover:bg-gray-500 rounded-lg text-[10px] md:text-xs font-semibold transition">Cancel</button>
-//             </div>
-//           </div>
-//         ) : (
-//           <div className="break-words text-sm md:text-base">{msg.message}</div>
-//         )}
-
-//         {!isEditing && (
-//           <div className={`absolute -top-2 ${isOwn ? 'right-2' : 'left-2'} hidden group-hover:flex gap-1 ${theme.colors.bgContextMenu} rounded-lg p-1 shadow-lg z-10`}>
-//             <button 
-//               onClick={(e) => {
-//                 e.stopPropagation();
-//                 setShowReactionPicker(showReactionPicker === msg._id ? null : msg._id);
-//               }}
-//               className="px-1.5 py-1 hover:bg-yellow-500/50 rounded text-xs transition" 
-//               title="React"
-//             >
-//               😀
-//             </button>
-//             <button onClick={() => handleReply(msg)} className="px-1.5 py-1 hover:bg-purple-500/50 rounded text-xs transition" title="Reply">💬</button>
-//             {isOwn && !msg.fileUrl && (
-//               <button onClick={() => startEdit(msg._id, msg.message)} className="px-1.5 py-1 hover:bg-blue-500/50 rounded text-xs transition" title="Edit">✏️</button>
-//             )}
-//             {isOwn && (
-//               <button onClick={() => handleDelete(msg._id)} className="px-1.5 py-1 hover:bg-red-500/50 rounded text-xs transition" title="Delete">🗑️</button>
-//             )}
-//           </div>
-//         )}
-
-//         {showReactionPicker === msg._id && (
-//           <div 
-//             className={`absolute ${isOwn ? 'right-0' : 'left-0'} -top-12 ${theme.colors.bgCard} rounded-xl px-2 py-1 shadow-2xl z-50 flex gap-1`}
-//             onClick={(e) => e.stopPropagation()}
-//           >
-//             {['❤️', '😂', '👍', '🔥', '🎉', '😮', '😢', '👏'].map(emoji => (
-//               <button
-//                 key={emoji}
-//                 onClick={() => handleAddReaction(msg._id, emoji)}
-//                 className="text-xl hover:scale-125 transition-transform p-1 hover:bg-white/10 rounded"
+//             return (
+//               <div
+//                 key={msg._id || idx}
+//                 className={`flex items-start gap-2 md:gap-3 max-w-[95%] sm:max-w-[85%] md:max-w-[80%] lg:max-w-[70%] animate-slideIn ${isOwn ? "ml-auto flex-row-reverse" : ""}`}
+//                 onContextMenu={(e) => handleContextMenu(e, msg)}
 //               >
-//                 {emoji}
-//               </button>
-//             ))}
-//           </div>
-//         )}
+//                 <div className={`w-8 h-8 md:w-9 md:h-9 flex-shrink-0 flex items-center justify-center rounded-full font-bold text-xs md:text-sm shadow-lg ${isOwn ? "bg-gradient-to-br from-blue-500 to-purple-500" : "bg-gradient-to-br from-gray-600 to-gray-700"}`}>
+//                   {msg.user?.charAt(0).toUpperCase() || "?"}
+//                 </div>
 
-//         {hasReactions && (
-//           <div className="flex flex-wrap gap-1 mt-2">
-//             {Object.entries(reactions).map(([emoji, users]) => {
-//               const userReacted = users.includes(currentUserRef.current.id);
-//               return (
-//                 <button
-//                   key={emoji}
-//                   onClick={() => handleAddReaction(msg._id, emoji)}
-//                   className={`flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-xs transition-all hover:scale-110 ${
-//                     userReacted
-//                       ? 'bg-blue-500/40 border border-blue-400/80'
-//                       : 'bg-white/10 border border-white/20 hover:bg-white/20'
-//                   }`}
-//                   title={`${users.length} reaction${users.length > 1 ? 's' : ''}`}
-//                 >
-//                   <span className="text-sm">{emoji}</span>
-//                   <span className="text-[10px] font-semibold">{users.length}</span>
-//                 </button>
-//               );
-//             })}
-//           </div>
-//         )}
-//       </div>
-//     </div>
-//   );
-// })}
+//                 <div className={`group relative rounded-xl md:rounded-2xl p-3 md:p-4 text-sm md:text-base shadow-xl transition-all ${isOwn ? theme.colors.bgMessageOwn + " text-right" : theme.colors.bgMessageOther + " text-left"}`}>
+//                   <div className={`text-[10px] md:text-xs ${theme.colors.textSecondary} mb-1 space-y-1`}>
+//                     <div className="flex flex-wrap items-center gap-1 md:gap-2">
+//                       <strong className="text-blue-300">{msg.user}</strong>
+//                       <span className="opacity-70">•</span>
+//                       <span className="opacity-70">{msg.createdAt ? formatTime(msg.createdAt) : ""}</span>
+//                       {msg.edited && <span className="italic text-purple-300">(edited)</span>}
+//                     </div>
+                    
+//                     {msg.replyTo && (
+//                       <div className="flex items-center gap-1 text-blue-300 bg-blue-500/10 rounded px-2 py-1 text-left">
+//                         <span>↩️</span>
+//                         <span className="font-semibold">{msg.replyTo.user}</span>
+//                         {msg.replyTo.message && (
+//                           <span className="opacity-70 text-[9px]">
+//                             : {msg.replyTo.message.substring(0, 40)}{msg.replyTo.message.length > 40 ? '...' : ''}
+//                           </span>
+//                         )}
+//                       </div>
+//                     )}
+//                   </div>
+
+//                   {msg.fileUrl ? (
+//                     <div className="mt-2">
+//                       {msg.fileType === "image" ? (
+//                         <a href={msg.fileUrl} target="_blank" rel="noopener noreferrer">
+//                           <img src={msg.fileUrl} alt={msg.fileName} className="max-w-full max-h-48 md:max-h-64 rounded-lg hover:opacity-90 transition" />
+//                         </a>
+//                       ) : (
+//                         <a href={msg.fileUrl} target="_blank" rel="noopener noreferrer" className={`flex items-center gap-2 md:gap-3 ${theme.colors.bgInput} p-2 md:p-3 rounded-lg hover:bg-white/20 transition`}>
+//                           <div className="text-2xl md:text-4xl">{msg.fileType === "pdf" ? "📄" : "📁"}</div>
+//                           <div>
+//                             <div className="font-semibold text-xs md:text-sm">{msg.fileName}</div>
+//                             <div className={`text-[10px] md:text-xs ${theme.colors.textMuted}`}>{formatFileSize(msg.fileSize)}</div>
+//                           </div>
+//                           <div className="text-blue-400">⬇️</div>
+//                         </a>
+//                       )}
+//                       {msg.message && <div className="mt-2">{msg.message}</div>}
+//                     </div>
+//                   ) : isEditing ? (
+//                     <div className="space-y-2">
+//                       <input 
+//                         type="text" 
+//                         value={editText} 
+//                         onChange={(e) => setEditText(e.target.value)} 
+//                         className={`w-full bg-white/20 border rounded-lg px-2 md:px-3 py-1.5 md:py-2 ${theme.colors.textPrimary} focus:outline-none focus:ring-2 focus:ring-blue-400`}
+//                         autoFocus 
+//                         onKeyDown={(e) => { 
+//                           if (e.key === "Enter") saveEdit(msg._id); 
+//                           if (e.key === "Escape") cancelEdit(); 
+//                         }} 
+//                       />
+//                       <div className="flex gap-2 justify-end">
+//                         <button onClick={() => saveEdit(msg._id)} className="px-2 md:px-3 py-1 bg-green-500 rounded-lg text-xs font-semibold">Save</button>
+//                         <button onClick={cancelEdit} className="px-2 md:px-3 py-1 bg-gray-500 rounded-lg text-xs font-semibold">Cancel</button>
+//                       </div>
+//                     </div>
+//                   ) : (
+//                     <div className="break-words">{msg.message}</div>
+//                   )}
+
+//                   {!isEditing && (
+//                     <div className={`absolute -top-2 ${isOwn ? 'right-2' : 'left-2'} hidden group-hover:flex gap-1 ${theme.colors.bgContextMenu} rounded-lg p-1 shadow-lg z-20`}>
+//                       <button 
+//                         onClick={(e) => {
+//                           e.stopPropagation();
+//                           console.log("😀 clicked for", msg._id);
+//                           setShowReactionPicker(prev => prev === msg._id ? null : msg._id);
+//                         }}
+//                         className="px-1.5 py-1 hover:bg-yellow-500/50 rounded transition" 
+//                         title="React"
+//                       >
+//                         😀
+//                       </button>
+//                       <button onClick={() => handleReply(msg)} className="px-1.5 py-1 hover:bg-purple-500/50 rounded transition" title="Reply">💬</button>
+//                       {isOwn && !msg.fileUrl && (
+//                         <button onClick={() => startEdit(msg._id, msg.message)} className="px-1.5 py-1 hover:bg-blue-500/50 rounded transition" title="Edit">✏️</button>
+//                       )}
+//                       {isOwn && (
+//                         <button onClick={() => handleDelete(msg._id)} className="px-1.5 py-1 hover:bg-red-500/50 rounded transition" title="Delete">🗑️</button>
+//                       )}
+//                     </div>
+//                   )}
+
+//                   {showReactionPicker === msg._id && (
+//                     <div 
+//                       className={`absolute ${isOwn ? 'right-0' : 'left-0'} -top-12 ${theme.colors.bgCard} rounded-xl px-2 py-1 shadow-2xl z-50 flex gap-1`}
+//                       onClick={(e) => e.stopPropagation()}
+//                     >
+//                       {['❤️', '😂', '👍', '🔥', '🎉', '😮', '😢', '👏'].map(emoji => (
+//                         <button
+//                           key={emoji}
+//                           onClick={(e) => {
+//                             e.stopPropagation();
+//                             console.log("Emoji", emoji, "clicked");
+//                             handleAddReaction(msg._id, emoji);
+//                           }}
+//                           className="text-xl hover:scale-125 transition p-1 hover:bg-white/10 rounded"
+//                         >
+//                           {emoji}
+//                         </button>
+//                       ))}
+//                     </div>
+//                   )}
+
+//                   {hasReactions && (
+//                     <div className="flex flex-wrap gap-1 mt-2">
+//                       {Object.entries(reactions).map(([emoji, users]) => {
+//                         const userReacted = users.includes(currentUserRef.current.id);
+//                         return (
+//                           <button
+//                             key={emoji}
+//                             onClick={() => handleAddReaction(msg._id, emoji)}
+//                             className={`flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-xs hover:scale-110 transition ${
+//                               userReacted
+//                                 ? 'bg-blue-500/40 border border-blue-400'
+//                                 : 'bg-white/10 border border-white/20'
+//                             }`}
+//                             title={`${users.length} reaction${users.length > 1 ? 's' : ''}`}
+//                           >
+//                             <span>{emoji}</span>
+//                             <span className="text-[10px] font-semibold">{users.length}</span>
+//                           </button>
+//                         );
+//                       })}
+//                     </div>
+//                   )}
+//                 </div>
+//               </div>
+//             );
+//           })}
 
 //           <div ref={chatEndRef} />
 //         </div>
@@ -508,36 +524,36 @@
 //             <button onClick={() => {
 //               const msg = messages.find(m => m._id === contextMenu.messageId);
 //               handleReply(msg);
-//             }} className={`w-full px-4 py-2 text-left hover:bg-purple-500/30 transition text-sm flex items-center gap-2 ${theme.colors.textSecondary}`}>💬 Reply</button>
+//             }} className={`w-full px-4 py-2 text-left hover:bg-purple-500/30 transition flex items-center gap-2 ${theme.colors.textSecondary}`}>💬 Reply</button>
 //             {!contextMenu.hasFile && (
-//               <button onClick={() => startEdit(contextMenu.messageId, contextMenu.message)} className={`w-full px-4 py-2 text-left hover:bg-blue-500/30 transition text-sm flex items-center gap-2 ${theme.colors.textSecondary}`}>✏️ Edit Message</button>
+//               <button onClick={() => startEdit(contextMenu.messageId, contextMenu.message)} className={`w-full px-4 py-2 text-left hover:bg-blue-500/30 transition flex items-center gap-2 ${theme.colors.textSecondary}`}>✏️ Edit</button>
 //             )}
-//             <button onClick={() => handleDelete(contextMenu.messageId)} className="w-full px-4 py-2 text-left hover:bg-red-500/30 transition text-sm flex items-center gap-2 text-red-400">🗑️ Delete Message</button>
+//             <button onClick={() => handleDelete(contextMenu.messageId)} className="w-full px-4 py-2 text-left hover:bg-red-500/30 transition flex items-center gap-2 text-red-400">🗑️ Delete</button>
 //           </div>
 //         )}
 
 //         {showDeleteConfirm && (
-//           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 px-4">
+//           <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 px-4">
 //             <div className={`${theme.colors.bgCard} rounded-2xl p-4 md:p-6 max-w-sm w-full shadow-2xl`}>
-//               <h3 className="text-lg md:text-xl font-bold mb-3 md:mb-4">Delete Message?</h3>
-//               <p className={`text-sm md:text-base ${theme.colors.textSecondary} mb-4 md:mb-6`}>This will delete the message {messages.find(m => m._id === showDeleteConfirm)?.fileUrl ? "and file " : ""}permanently.</p>
-//               <div className="flex gap-2 md:gap-3">
-//                 <button onClick={confirmDelete} className="flex-1 bg-red-500/80 hover:bg-red-500 py-2 rounded-lg font-semibold transition text-sm md:text-base">Delete</button>
-//                 <button onClick={() => setShowDeleteConfirm(null)} className="flex-1 bg-gray-600/80 hover:bg-gray-600 py-2 rounded-lg font-semibold transition text-sm md:text-base">Cancel</button>
+//               <h3 className="text-lg font-bold mb-3">Delete Message?</h3>
+//               <p className={`text-sm ${theme.colors.textSecondary} mb-4`}>This will delete the message permanently.</p>
+//               <div className="flex gap-2">
+//                 <button onClick={confirmDelete} className="flex-1 bg-red-500 py-2 rounded-lg font-semibold">Delete</button>
+//                 <button onClick={() => setShowDeleteConfirm(null)} className="flex-1 bg-gray-600 py-2 rounded-lg font-semibold">Cancel</button>
 //               </div>
 //             </div>
 //           </div>
 //         )}
 
-//         <div className={`px-2 sm:px-4 md:px-6 pb-2 text-xs md:text-sm italic text-purple-300 min-h-[20px]`}>
+//         <div className={`px-2 sm:px-4 md:px-6 pb-2 text-xs italic text-purple-300 min-h-[20px]`}>
 //           {typingUsers.length > 0 && (
 //             <div className="flex items-center gap-2">
 //               <div className="flex gap-1">
-//                 <span className="w-1.5 h-1.5 md:w-2 md:h-2 bg-purple-400 rounded-full animate-bounce"></span>
-//                 <span className="w-1.5 h-1.5 md:w-2 md:h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: "0.1s" }}></span>
-//                 <span className="w-1.5 h-1.5 md:w-2 md:h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: "0.2s" }}></span>
+//                 <span className="w-1.5 h-1.5 bg-purple-400 rounded-full animate-bounce"></span>
+//                 <span className="w-1.5 h-1.5 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: "0.1s" }}></span>
+//                 <span className="w-1.5 h-1.5 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: "0.2s" }}></span>
 //               </div>
-//               <span className="truncate">{typingUsers.join(", ")} {typingUsers.length === 1 ? "is typing..." : "are typing..."}</span>
+//               <span>{typingUsers.join(", ")} {typingUsers.length === 1 ? "is" : "are"} typing...</span>
 //             </div>
 //           )}
 //         </div>
@@ -545,51 +561,46 @@
 //         {replyingTo && (
 //           <div className="px-2 sm:px-4 md:px-6 pb-2">
 //             <div className={`flex items-center gap-2 ${theme.colors.bgCard} rounded-xl p-2 border-l-4 border-blue-400`}>
-//               <div className="flex-1 min-w-0">
+//               <div className="flex-1">
 //                 <div className={`text-xs ${theme.colors.textSecondary}`}>
-//                   ↩️ <span className="font-semibold">{replyingTo.user}</span>: <span className="truncate">{replyingTo.message || "(file)"}</span>
+//                   ↩️ <strong>{replyingTo.user}</strong>: {replyingTo.message || "(file)"}
 //                 </div>
 //               </div>
-//               <button onClick={cancelReply} className="text-red-400 hover:text-red-300 text-lg">✕</button>
+//               <button onClick={cancelReply} className="text-red-400">✕</button>
 //             </div>
 //           </div>
 //         )}
 
 //         {selectedFile && (
 //           <div className="px-2 sm:px-4 md:px-6 pb-2">
-//             <div className={`flex items-center gap-2 md:gap-3 rounded-xl md:rounded-2xl ${theme.colors.bgCard} p-2 md:p-3 shadow-xl`}>
-//               <div className="flex h-8 w-8 md:h-10 md:w-10 flex-shrink-0 items-center justify-center rounded-lg md:rounded-xl bg-gradient-to-br from-blue-500/40 to-purple-500/40 text-lg md:text-2xl">
+//             <div className={`flex items-center gap-2 rounded-xl ${theme.colors.bgCard} p-2 shadow-xl`}>
+//               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500/40 to-purple-500/40 text-lg">
 //                 {selectedFile.type?.startsWith("image/") ? "🖼️" : selectedFile.type === "application/pdf" ? "📄" : "📁"}
 //               </div>
-//               <div className="min-w-0 flex-1">
-//                 <div className="break-words font-semibold text-xs md:text-sm">{selectedFile.name}</div>
-//                 <div className={`text-[10px] md:text-xs ${theme.colors.textSecondary}`}>{formatFileSize(selectedFile.size)}</div>
-//                 {uploadingFile && (
-//                   <div className="mt-1 h-1 md:h-1.5 w-full overflow-hidden rounded bg-white/10">
-//                     <div className="h-full w-2/3 animate-pulse bg-gradient-to-r from-blue-400/60 to-purple-400/60"></div>
-//                   </div>
-//                 )}
+//               <div className="flex-1">
+//                 <div className="font-semibold text-xs">{selectedFile.name}</div>
+//                 <div className={`text-[10px] ${theme.colors.textSecondary}`}>{formatFileSize(selectedFile.size)}</div>
 //               </div>
-//               <button onClick={() => { setSelectedFile(null); fileInputRef.current.value = ""; }} className="ml-2 rounded-lg bg-white/10 px-2 py-1 text-xs md:text-sm text-red-300 hover:bg-white/20 transition flex-shrink-0">✕</button>
+//               <button onClick={() => { setSelectedFile(null); fileInputRef.current.value = ""; }} className="rounded-lg bg-white/10 px-2 py-1 text-xs text-red-300">✕</button>
 //             </div>
 //           </div>
 //         )}
 
-//         <form onSubmit={handleSend} className="flex gap-2 px-2 sm:px-4 md:px-6 pb-3 md:pb-4">
+//         <form onSubmit={handleSend} className="flex gap-2 px-2 sm:px-4 md:px-6 pb-3">
 //           <input type="file" ref={fileInputRef} onChange={handleFileSelect} className="hidden" accept="image/*,.pdf,.doc,.docx,.txt,.zip" />
-//           <button type="button" onClick={() => fileInputRef.current?.click()} disabled={uploadingFile} className={`p-2.5 md:p-3 lg:p-4 ${theme.colors.bgInput} rounded-xl md:rounded-2xl hover:bg-white/20 transition disabled:opacity-50 flex-shrink-0 text-lg md:text-xl`} title="Attach file">📎</button>
+//           <button type="button" onClick={() => fileInputRef.current?.click()} disabled={uploadingFile} className={`p-2.5 ${theme.colors.bgInput} rounded-xl hover:bg-white/20 transition disabled:opacity-50`} title="Attach file">📎</button>
 //           <input 
 //             type="text" 
-//             placeholder={replyingTo ? `Reply to ${replyingTo.user}...` : selectedFile ? "Caption (optional)..." : "Message..."} 
+//             placeholder={replyingTo ? `Reply to ${replyingTo.user}...` : selectedFile ? "Caption..." : "Message..."} 
 //             value={newMessage} 
 //             onChange={(e) => { 
 //               setNewMessage(e.target.value); 
 //               socket.emit("typing", { room, user: currentUserRef.current.name }); 
 //             }} 
 //             disabled={uploadingFile} 
-//             className={`flex-1 min-w-0 p-2.5 md:p-3 lg:p-4 text-sm md:text-base rounded-xl md:rounded-2xl ${theme.colors.bgInput} ${theme.colors.textPrimary} placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400 transition shadow-xl disabled:opacity-50`} 
+//             className={`flex-1 p-2.5 rounded-xl ${theme.colors.bgInput} ${theme.colors.textPrimary} placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400`} 
 //           />
-//           <button type="submit" disabled={uploadingFile || (!newMessage.trim() && !selectedFile)} className={`${theme.colors.bgButton} px-4 md:px-6 lg:px-8 rounded-xl md:rounded-2xl text-sm md:text-base font-semibold shadow-xl transition-all hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0`}>
+//           <button type="submit" disabled={uploadingFile || (!newMessage.trim() && !selectedFile)} className={`${theme.colors.bgButton} px-6 rounded-xl font-semibold hover:scale-105 disabled:opacity-50`}>
 //             {uploadingFile ? "⏳" : replyingTo ? "Reply" : "Send"}
 //           </button>
 //         </form>
@@ -608,8 +619,7 @@
 //   );
 // }
 
-//UPDATED 
-// src/pages/Dashboard.jsx
+// src/pages/Dashboard.jsx - WITH THREADED REPLIES DISPLAY!
 import React, { useState, useEffect, useRef } from "react";
 import { jwtDecode } from "jwt-decode";
 import { socket } from "../socket";
@@ -633,12 +643,8 @@ export default function Dashboard() {
   const [selectedFile, setSelectedFile] = useState(null);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
-  
-  // 🔥 Reaction states
   const [showReactionPicker, setShowReactionPicker] = useState(null);
   const [messageReactions, setMessageReactions] = useState({});
-  
-  // 🔥 Reply/Thread states
   const [replyingTo, setReplyingTo] = useState(null);
   
   const currentUserRef = useRef({ name: "Unknown", id: null });
@@ -654,6 +660,7 @@ export default function Dashboard() {
         const decoded = jwtDecode(token);
         currentUserRef.current.name = decoded.name || decoded.email || "Unknown";
         currentUserRef.current.id = decoded.id || decoded._id || null;
+        console.log("✅ User ID:", currentUserRef.current.id);
       } catch (err) {
         console.error("JWT decode failed:", err);
       }
@@ -671,7 +678,6 @@ export default function Dashboard() {
       if (msgs.length > 0) {
         oldestMessageId.current = msgs[0]._id;
       }
-      
       const reactionsMap = {};
       msgs.forEach(msg => {
         if (msg.reactions) {
@@ -713,6 +719,7 @@ export default function Dashboard() {
     };
     
     const handleMessageReaction = ({ messageId, reactions }) => {
+      console.log("🎉 Reaction received for", messageId, reactions);
       setMessageReactions(prev => ({ ...prev, [messageId]: reactions }));
       setMessages(prev => prev.map(msg => 
         msg._id === messageId ? { ...msg, reactions } : msg
@@ -846,12 +853,10 @@ export default function Dashboard() {
 
       if (replyingTo) {
         msgData.replyTo = replyingTo._id;
-        socket.emit("sendReply", msgData);
-        setReplyingTo(null);
-      } else {
-        socket.emit("sendMessage", msgData);
       }
       
+      socket.emit("sendMessage", msgData);
+      setReplyingTo(null);
       setSelectedFile(null);
       setNewMessage("");
       fileInputRef.current.value = "";
@@ -880,12 +885,10 @@ export default function Dashboard() {
 
     if (replyingTo) {
       msgData.replyTo = replyingTo._id;
-      socket.emit("sendReply", msgData);
-      setReplyingTo(null);
-    } else {
-      socket.emit("sendMessage", msgData);
     }
-
+    
+    socket.emit("sendMessage", msgData);
+    setReplyingTo(null);
     setNewMessage("");
   };
 
@@ -934,7 +937,12 @@ export default function Dashboard() {
 
   const handleAddReaction = (messageId, emoji) => {
     const userId = currentUserRef.current.id;
-    if (!userId) return;
+    if (!userId) {
+      console.error("❌ No user ID!");
+      alert("Error: Please log out and log in again");
+      return;
+    }
+    console.log("✅ Sending reaction:", { messageId, emoji, userId, room });
     socket.emit("addReaction", { messageId, emoji, userId, room });
     setShowReactionPicker(null);
   };
@@ -996,13 +1004,26 @@ export default function Dashboard() {
                   {msg.user?.charAt(0).toUpperCase() || "?"}
                 </div>
 
-                <div className={`group relative rounded-xl md:rounded-2xl p-3 md:p-4 text-sm md:text-base shadow-xl transition-all overflow-hidden ${isOwn ? theme.colors.bgMessageOwn + " text-right" : theme.colors.bgMessageOther + " text-left"}`}>
-                  <div className={`text-[10px] md:text-xs ${theme.colors.textSecondary} mb-1 flex flex-wrap items-center gap-1 md:gap-2`}>
-                    <strong className="text-blue-300 break-words max-w-full">{msg.user}</strong>
-                    <span className="opacity-70">•</span>
-                    <span className="opacity-70 text-[10px] md:text-xs whitespace-nowrap">{msg.createdAt ? formatTime(msg.createdAt) : ""}</span>
-                    {msg.edited && <span className="text-[10px] md:text-xs italic text-purple-300 whitespace-nowrap">(edited)</span>}
-                    {msg.replyTo && <span className="text-[10px] text-blue-300">↩️</span>}
+                <div className={`group relative rounded-xl md:rounded-2xl p-3 md:p-4 text-sm md:text-base shadow-xl transition-all ${isOwn ? theme.colors.bgMessageOwn + " text-right" : theme.colors.bgMessageOther + " text-left"}`}>
+                  <div className={`text-[10px] md:text-xs ${theme.colors.textSecondary} mb-1 space-y-1`}>
+                    <div className="flex flex-wrap items-center gap-1 md:gap-2">
+                      <strong className="text-blue-300">{msg.user}</strong>
+                      <span className="opacity-70">•</span>
+                      <span className="opacity-70">{msg.createdAt ? formatTime(msg.createdAt) : ""}</span>
+                      {msg.edited && <span className="italic text-purple-300">(edited)</span>}
+                    </div>
+                    
+                    {msg.replyTo && (
+  <div className="border-l-4 border-blue-400 pl-2 mb-2 bg-black/20 py-1 rounded-r">
+    <div className="text-[10px] font-semibold text-blue-400">{msg.replyTo.user}</div>
+    {msg.replyTo.message && (
+      <div className="text-[9px] opacity-70 truncate">
+        {msg.replyTo.message.substring(0, 50)}
+      </div>
+    )}
+  </div>
+)}
+
                   </div>
 
                   {msg.fileUrl ? (
@@ -1013,15 +1034,15 @@ export default function Dashboard() {
                         </a>
                       ) : (
                         <a href={msg.fileUrl} target="_blank" rel="noopener noreferrer" className={`flex items-center gap-2 md:gap-3 ${theme.colors.bgInput} p-2 md:p-3 rounded-lg hover:bg-white/20 transition`}>
-                          <div className="text-2xl md:text-4xl flex-shrink-0">{msg.fileType === "pdf" ? "📄" : "📁"}</div>
-                          <div className="flex-1 min-w-0">
-                            <div className="font-semibold break-words text-xs md:text-sm">{msg.fileName}</div>
-                            <div className={`text-[10px] md:text-xs ${theme.colors.textMuted} mt-1`}>{formatFileSize(msg.fileSize)}</div>
+                          <div className="text-2xl md:text-4xl">{msg.fileType === "pdf" ? "📄" : "📁"}</div>
+                          <div>
+                            <div className="font-semibold text-xs md:text-sm">{msg.fileName}</div>
+                            <div className={`text-[10px] md:text-xs ${theme.colors.textMuted}`}>{formatFileSize(msg.fileSize)}</div>
                           </div>
-                          <div className="text-blue-400 flex-shrink-0">⬇️</div>
+                          <div className="text-blue-400">⬇️</div>
                         </a>
                       )}
-                      {msg.message && <div className="mt-2 break-words whitespace-pre-wrap text-sm md:text-base">{msg.message}</div>}
+                      {msg.message && <div className="mt-2">{msg.message}</div>}
                     </div>
                   ) : isEditing ? (
                     <div className="space-y-2">
@@ -1029,7 +1050,7 @@ export default function Dashboard() {
                         type="text" 
                         value={editText} 
                         onChange={(e) => setEditText(e.target.value)} 
-                        className={`w-full bg-white/20 ${theme.colors.borderPrimary} border rounded-lg px-2 md:px-3 py-1.5 md:py-2 ${theme.colors.textPrimary} text-sm md:text-base focus:outline-none focus:ring-2 focus:ring-blue-400`}
+                        className={`w-full bg-white/20 border rounded-lg px-2 md:px-3 py-1.5 md:py-2 ${theme.colors.textPrimary} focus:outline-none focus:ring-2 focus:ring-blue-400`}
                         autoFocus 
                         onKeyDown={(e) => { 
                           if (e.key === "Enter") saveEdit(msg._id); 
@@ -1037,32 +1058,33 @@ export default function Dashboard() {
                         }} 
                       />
                       <div className="flex gap-2 justify-end">
-                        <button onClick={() => saveEdit(msg._id)} className="px-2 md:px-3 py-1 bg-green-500/80 hover:bg-green-500 rounded-lg text-[10px] md:text-xs font-semibold transition">Save</button>
-                        <button onClick={cancelEdit} className="px-2 md:px-3 py-1 bg-gray-500/80 hover:bg-gray-500 rounded-lg text-[10px] md:text-xs font-semibold transition">Cancel</button>
+                        <button onClick={() => saveEdit(msg._id)} className="px-2 md:px-3 py-1 bg-green-500 rounded-lg text-xs font-semibold">Save</button>
+                        <button onClick={cancelEdit} className="px-2 md:px-3 py-1 bg-gray-500 rounded-lg text-xs font-semibold">Cancel</button>
                       </div>
                     </div>
                   ) : (
-                    <div className="break-words whitespace-pre-wrap text-sm md:text-base overflow-wrap-anywhere">{msg.message}</div>
+                    <div className="break-words">{msg.message}</div>
                   )}
 
                   {!isEditing && (
-                    <div className={`absolute -top-2 ${isOwn ? 'right-2' : 'left-2'} hidden group-hover:flex gap-1 ${theme.colors.bgContextMenu} rounded-lg p-1 shadow-lg z-10`}>
+                    <div className={`absolute -top-2 ${isOwn ? 'right-2' : 'left-2'} hidden group-hover:flex gap-1 ${theme.colors.bgContextMenu} rounded-lg p-1 shadow-lg z-20`}>
                       <button 
                         onClick={(e) => {
                           e.stopPropagation();
-                          setShowReactionPicker(showReactionPicker === msg._id ? null : msg._id);
+                          console.log("😀 clicked for", msg._id);
+                          setShowReactionPicker(prev => prev === msg._id ? null : msg._id);
                         }}
-                        className="px-1.5 py-1 hover:bg-yellow-500/50 rounded text-xs transition" 
+                        className="px-1.5 py-1 hover:bg-yellow-500/50 rounded transition" 
                         title="React"
                       >
                         😀
                       </button>
-                      <button onClick={() => handleReply(msg)} className="px-1.5 py-1 hover:bg-purple-500/50 rounded text-xs transition" title="Reply">💬</button>
+                      <button onClick={() => handleReply(msg)} className="px-1.5 py-1 hover:bg-purple-500/50 rounded transition" title="Reply">💬</button>
                       {isOwn && !msg.fileUrl && (
-                        <button onClick={() => startEdit(msg._id, msg.message)} className="px-1.5 py-1 hover:bg-blue-500/50 rounded text-xs transition" title="Edit">✏️</button>
+                        <button onClick={() => startEdit(msg._id, msg.message)} className="px-1.5 py-1 hover:bg-blue-500/50 rounded transition" title="Edit">✏️</button>
                       )}
                       {isOwn && (
-                        <button onClick={() => handleDelete(msg._id)} className="px-1.5 py-1 hover:bg-red-500/50 rounded text-xs transition" title="Delete">🗑️</button>
+                        <button onClick={() => handleDelete(msg._id)} className="px-1.5 py-1 hover:bg-red-500/50 rounded transition" title="Delete">🗑️</button>
                       )}
                     </div>
                   )}
@@ -1075,8 +1097,12 @@ export default function Dashboard() {
                       {['❤️', '😂', '👍', '🔥', '🎉', '😮', '😢', '👏'].map(emoji => (
                         <button
                           key={emoji}
-                          onClick={() => handleAddReaction(msg._id, emoji)}
-                          className="text-xl hover:scale-125 transition-transform p-1 hover:bg-white/10 rounded"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            console.log("Emoji", emoji, "clicked");
+                            handleAddReaction(msg._id, emoji);
+                          }}
+                          className="text-xl hover:scale-125 transition p-1 hover:bg-white/10 rounded"
                         >
                           {emoji}
                         </button>
@@ -1092,14 +1118,14 @@ export default function Dashboard() {
                           <button
                             key={emoji}
                             onClick={() => handleAddReaction(msg._id, emoji)}
-                            className={`flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-xs transition-all hover:scale-110 ${
+                            className={`flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-xs hover:scale-110 transition ${
                               userReacted
-                                ? 'bg-blue-500/40 border border-blue-400/80'
-                                : 'bg-white/10 border border-white/20 hover:bg-white/20'
+                                ? 'bg-blue-500/40 border border-blue-400'
+                                : 'bg-white/10 border border-white/20'
                             }`}
                             title={`${users.length} reaction${users.length > 1 ? 's' : ''}`}
                           >
-                            <span className="text-sm">{emoji}</span>
+                            <span>{emoji}</span>
                             <span className="text-[10px] font-semibold">{users.length}</span>
                           </button>
                         );
@@ -1119,36 +1145,36 @@ export default function Dashboard() {
             <button onClick={() => {
               const msg = messages.find(m => m._id === contextMenu.messageId);
               handleReply(msg);
-            }} className={`w-full px-4 py-2 text-left hover:bg-purple-500/30 transition text-sm flex items-center gap-2 ${theme.colors.textSecondary}`}>💬 Reply</button>
+            }} className={`w-full px-4 py-2 text-left hover:bg-purple-500/30 transition flex items-center gap-2 ${theme.colors.textSecondary}`}>💬 Reply</button>
             {!contextMenu.hasFile && (
-              <button onClick={() => startEdit(contextMenu.messageId, contextMenu.message)} className={`w-full px-4 py-2 text-left hover:bg-blue-500/30 transition text-sm flex items-center gap-2 ${theme.colors.textSecondary}`}>✏️ Edit Message</button>
+              <button onClick={() => startEdit(contextMenu.messageId, contextMenu.message)} className={`w-full px-4 py-2 text-left hover:bg-blue-500/30 transition flex items-center gap-2 ${theme.colors.textSecondary}`}>✏️ Edit</button>
             )}
-            <button onClick={() => handleDelete(contextMenu.messageId)} className="w-full px-4 py-2 text-left hover:bg-red-500/30 transition text-sm flex items-center gap-2 text-red-400">🗑️ Delete Message</button>
+            <button onClick={() => handleDelete(contextMenu.messageId)} className="w-full px-4 py-2 text-left hover:bg-red-500/30 transition flex items-center gap-2 text-red-400">🗑️ Delete</button>
           </div>
         )}
 
         {showDeleteConfirm && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 px-4">
+          <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 px-4">
             <div className={`${theme.colors.bgCard} rounded-2xl p-4 md:p-6 max-w-sm w-full shadow-2xl`}>
-              <h3 className="text-lg md:text-xl font-bold mb-3 md:mb-4">Delete Message?</h3>
-              <p className={`text-sm md:text-base ${theme.colors.textSecondary} mb-4 md:mb-6`}>This will delete the message {messages.find(m => m._id === showDeleteConfirm)?.fileUrl ? "and file " : ""}permanently.</p>
-              <div className="flex gap-2 md:gap-3">
-                <button onClick={confirmDelete} className="flex-1 bg-red-500/80 hover:bg-red-500 py-2 rounded-lg font-semibold transition text-sm md:text-base">Delete</button>
-                <button onClick={() => setShowDeleteConfirm(null)} className="flex-1 bg-gray-600/80 hover:bg-gray-600 py-2 rounded-lg font-semibold transition text-sm md:text-base">Cancel</button>
+              <h3 className="text-lg font-bold mb-3">Delete Message?</h3>
+              <p className={`text-sm ${theme.colors.textSecondary} mb-4`}>This will delete the message permanently.</p>
+              <div className="flex gap-2">
+                <button onClick={confirmDelete} className="flex-1 bg-red-500 py-2 rounded-lg font-semibold">Delete</button>
+                <button onClick={() => setShowDeleteConfirm(null)} className="flex-1 bg-gray-600 py-2 rounded-lg font-semibold">Cancel</button>
               </div>
             </div>
           </div>
         )}
 
-        <div className={`px-2 sm:px-4 md:px-6 pb-2 text-xs md:text-sm italic text-purple-300 min-h-[20px]`}>
+        <div className={`px-2 sm:px-4 md:px-6 pb-2 text-xs italic text-purple-300 min-h-[20px]`}>
           {typingUsers.length > 0 && (
             <div className="flex items-center gap-2">
               <div className="flex gap-1">
-                <span className="w-1.5 h-1.5 md:w-2 md:h-2 bg-purple-400 rounded-full animate-bounce"></span>
-                <span className="w-1.5 h-1.5 md:w-2 md:h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: "0.1s" }}></span>
-                <span className="w-1.5 h-1.5 md:w-2 md:h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: "0.2s" }}></span>
+                <span className="w-1.5 h-1.5 bg-purple-400 rounded-full animate-bounce"></span>
+                <span className="w-1.5 h-1.5 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: "0.1s" }}></span>
+                <span className="w-1.5 h-1.5 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: "0.2s" }}></span>
               </div>
-              <span className="truncate">{typingUsers.length === 1 ? `${typingUsers[0]} is typing...` : `${typingUsers.join(", ")} are typing...`}</span>
+              <span>{typingUsers.join(", ")} {typingUsers.length === 1 ? "is" : "are"} typing...</span>
             </div>
           )}
         </div>
@@ -1156,54 +1182,76 @@ export default function Dashboard() {
         {replyingTo && (
           <div className="px-2 sm:px-4 md:px-6 pb-2">
             <div className={`flex items-center gap-2 ${theme.colors.bgCard} rounded-xl p-2 border-l-4 border-blue-400`}>
-              <div className="flex-1 min-w-0">
+              <div className="flex-1">
                 <div className={`text-xs ${theme.colors.textSecondary}`}>
-                  ↩️ <span className="font-semibold">{replyingTo.user}</span>: <span className="truncate">{replyingTo.message || "(file)"}</span>
+                  ↩️ <strong>{replyingTo.user}</strong>: {replyingTo.message || "(file)"}
                 </div>
               </div>
-              <button onClick={cancelReply} className="text-red-400 hover:text-red-300 text-lg">✕</button>
+              <button onClick={cancelReply} className="text-red-400">✕</button>
             </div>
           </div>
         )}
 
         {selectedFile && (
           <div className="px-2 sm:px-4 md:px-6 pb-2">
-            <div className={`flex items-center gap-2 md:gap-3 rounded-xl md:rounded-2xl ${theme.colors.bgCard} p-2 md:p-3 shadow-xl`}>
-              <div className="flex h-8 w-8 md:h-10 md:w-10 flex-shrink-0 items-center justify-center rounded-lg md:rounded-xl bg-gradient-to-br from-blue-500/40 to-purple-500/40 text-lg md:text-2xl">
+            <div className={`flex items-center gap-2 rounded-xl ${theme.colors.bgCard} p-2 shadow-xl`}>
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500/40 to-purple-500/40 text-lg">
                 {selectedFile.type?.startsWith("image/") ? "🖼️" : selectedFile.type === "application/pdf" ? "📄" : "📁"}
               </div>
-              <div className="min-w-0 flex-1">
-                <div className="break-words font-semibold text-xs md:text-sm">{selectedFile.name}</div>
-                <div className={`text-[10px] md:text-xs ${theme.colors.textSecondary}`}>{formatFileSize(selectedFile.size)}</div>
-                {uploadingFile && (
-                  <div className="mt-1 h-1 md:h-1.5 w-full overflow-hidden rounded bg-white/10">
-                    <div className="h-full w-2/3 animate-pulse bg-gradient-to-r from-blue-400/60 to-purple-400/60"></div>
-                  </div>
-                )}
+              <div className="flex-1">
+                <div className="font-semibold text-xs">{selectedFile.name}</div>
+                <div className={`text-[10px] ${theme.colors.textSecondary}`}>{formatFileSize(selectedFile.size)}</div>
               </div>
-              <button onClick={() => { setSelectedFile(null); fileInputRef.current.value = ""; }} className="ml-2 rounded-lg bg-white/10 px-2 py-1 text-xs md:text-sm text-red-300 hover:bg-white/20 transition flex-shrink-0">✕</button>
+              <button onClick={() => { setSelectedFile(null); fileInputRef.current.value = ""; }} className="rounded-lg bg-white/10 px-2 py-1 text-xs text-red-300">✕</button>
             </div>
           </div>
         )}
 
-        <form onSubmit={handleSend} className="flex gap-2 px-2 sm:px-4 md:px-6 pb-3 md:pb-4">
-          <input type="file" ref={fileInputRef} onChange={handleFileSelect} className="hidden" accept="image/*,.pdf,.doc,.docx,.txt,.zip" />
-          <button type="button" onClick={() => fileInputRef.current?.click()} disabled={uploadingFile} className={`p-2.5 md:p-3 lg:p-4 ${theme.colors.bgInput} rounded-xl md:rounded-2xl hover:bg-white/20 transition disabled:opacity-50 flex-shrink-0 text-lg md:text-xl`} title="Attach file">📎</button>
-          <input 
-            type="text" 
-            placeholder={replyingTo ? `Reply to ${replyingTo.user}...` : selectedFile ? "Caption (optional)..." : "Message..."} 
-            value={newMessage} 
-            onChange={(e) => { 
-              setNewMessage(e.target.value); 
-              socket.emit("typing", { room, user: currentUserRef.current.name }); 
-            }} 
-            disabled={uploadingFile} 
-            className={`flex-1 min-w-0 p-2.5 md:p-3 lg:p-4 text-sm md:text-base rounded-xl md:rounded-2xl ${theme.colors.bgInput} ${theme.colors.textPrimary} placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400 transition shadow-xl disabled:opacity-50`} 
-          />
-          <button type="submit" disabled={uploadingFile || (!newMessage.trim() && !selectedFile)} className={`${theme.colors.bgButton} px-4 md:px-6 lg:px-8 rounded-xl md:rounded-2xl text-sm md:text-base font-semibold shadow-xl transition-all hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0`}>
-            {uploadingFile ? "⏳" : replyingTo ? "Reply" : "Send"}
-          </button>
-        </form>
+       <form onSubmit={handleSend} className="flex gap-2 px-2 sm:px-4 md:px-6 pb-3">
+  <input type="file" ref={fileInputRef} onChange={handleFileSelect} className="hidden" accept="image/*,.pdf,.doc,.docx,.txt,.zip" />
+  
+  <button 
+    type="button" 
+    onClick={() => fileInputRef.current?.click()} 
+    disabled={uploadingFile} 
+    className={`p-2.5 ${theme.colors.bgInput} rounded-xl hover:bg-white/20 transition disabled:opacity-50 self-end`} 
+    title="Attach file"
+  >
+    📎
+  </button>
+  
+  <textarea
+    placeholder={replyingTo ? `Reply to ${replyingTo.user}...` : selectedFile ? "Caption..." : "Message..."} 
+    value={newMessage} 
+    onChange={(e) => { 
+      setNewMessage(e.target.value); 
+      socket.emit("typing", { room, user: currentUserRef.current.name }); 
+    }}
+    onKeyDown={(e) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        handleSend(e);
+      }
+    }}
+    disabled={uploadingFile}
+    rows={1}
+    className={`flex-1 p-2.5 rounded-xl ${theme.colors.bgInput} ${theme.colors.textPrimary} placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none max-h-32 overflow-y-auto`}
+    style={{
+      minHeight: '44px',
+      height: 'auto'
+    }}
+  />
+  
+  <button 
+  type="submit" 
+  disabled={uploadingFile || (!newMessage.trim() && !selectedFile)} 
+  className={`${theme.colors.bgButton} w-10 h-10 rounded-full font-bold hover:scale-110 disabled:opacity-50 transition-all flex items-center justify-center self-end shadow-lg`}
+>
+  {uploadingFile ? "⏳" : "➤"}
+</button>
+
+</form>
+
       </main>
 
       <style>{`
@@ -1213,10 +1261,6 @@ export default function Dashboard() {
         }
         .animate-slideIn {
           animation: slideIn 0.3s ease-out;
-        }
-        .overflow-wrap-anywhere {
-          overflow-wrap: anywhere;
-          word-break: break-word;
         }
       `}</style>
     </div>
