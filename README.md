@@ -93,6 +93,37 @@ Switch between themes on the fly! Each theme transforms the entire app:
 - **Customizable** color schemes
 
 ---
+## 🌟 Key Features Deep Dive
+
+### 🎨 **Theme System**
+- **7 pre-built themes** with instant switching
+- **LocalStorage persistence** - your choice is saved
+- **Context-based** - all components update simultaneously
+- **CSS-in-JS approach** with Tailwind utilities
+- **No page reload** required for theme changes
+
+### ❤️ **Message Reactions**
+- Click **😀** button on any message
+- Choose from **8 emojis**: ❤️😂👍🔥🎉😮😢👏
+- **Toggle reactions** - click again to remove
+- See **reaction counts** and who reacted
+- **Real-time sync** across all users
+
+### 💬 **Threaded Replies**
+- Click **💬** on any message to reply
+- Creates **conversation threads**
+- Shows **reply count** on parent messages
+- **↩️ Indicator** shows it's a reply
+- Keeps conversations **organized**
+
+### 📁 **File Upload System**
+- **Drag & drop** or click to upload
+- **Image preview** for photos
+- **Download links** for documents
+- **Progress indicators** during upload
+- **10MB size limit** with validation
+- Files stored on **Cloudinary CDN**
+
 
 ## 🖼️ Screenshots
 
@@ -184,37 +215,6 @@ Open [http://localhost:5173](http://localhost:5173) in your browser! 🎉
 
 
 ---
-
-## 🌟 Key Features Deep Dive
-
-### 🎨 **Theme System**
-- **7 pre-built themes** with instant switching
-- **LocalStorage persistence** - your choice is saved
-- **Context-based** - all components update simultaneously
-- **CSS-in-JS approach** with Tailwind utilities
-- **No page reload** required for theme changes
-
-### ❤️ **Message Reactions**
-- Click **😀** button on any message
-- Choose from **8 emojis**: ❤️😂👍🔥🎉😮😢👏
-- **Toggle reactions** - click again to remove
-- See **reaction counts** and who reacted
-- **Real-time sync** across all users
-
-### 💬 **Threaded Replies**
-- Click **💬** on any message to reply
-- Creates **conversation threads**
-- Shows **reply count** on parent messages
-- **↩️ Indicator** shows it's a reply
-- Keeps conversations **organized**
-
-### 📁 **File Upload System**
-- **Drag & drop** or click to upload
-- **Image preview** for photos
-- **Download links** for documents
-- **Progress indicators** during upload
-- **10MB size limit** with validation
-- Files stored on **Cloudinary CDN**
 
 ---
 
