@@ -180,28 +180,7 @@ Open [http://localhost:5173](http://localhost:5173) in your browser! 🎉
 
 ---
 
-## 🏗️ Project Structure
-chatforge-frontend/
-├── src/
-│ ├── components/ # Reusable UI components
-│ │ ├── Sidebar.jsx # Room switcher + online users
-│ │ ├── ThemeSelector.jsx # Theme dropdown
-│ │ └── ProtectedRoute.jsx # Auth guard
-│ ├── context/ # React Context providers
-│ │ └── ThemeContext.jsx # Theme system state
-│ ├── pages/ # Route pages
-│ │ ├── Dashboard.jsx # Main chat interface
-│ │ ├── Login.jsx # Authentication
-│ │ ├── Register.jsx # User signup
-│ │ ├── Profile.jsx # User profile view
-│ │ └── EditProfile.jsx # Profile editor
-│ ├── api/ # API configuration
-│ │ └── axios.js # Axios instance with auth
-│ ├── socket.js # Socket.IO client setup
-│ ├── App.jsx # Main app component
-│ └── main.jsx # Entry point
-├── public/ # Static assets
-└── package.json # Dependencies
+
 
 
 ---
