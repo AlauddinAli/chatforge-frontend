@@ -127,7 +127,7 @@ Switch between themes on the fly! Each theme transforms the entire app:
 
 ## 🖼️ Preview
 
-### 🔥 Themes 
+### 🔥 Themes Selection 
 https://github.com/user-attachments/assets/5bf10387-5bee-4219-8370-1ed4b0fc077b
 
 ### ☀️ Light Mode
