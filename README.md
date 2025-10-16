@@ -130,9 +130,6 @@ Switch between themes on the fly! Each theme transforms the entire app:
 ### 🎨 Theme Selection Demo
 https://github.com/user-attachments/assets/039b29ab-9936-44bc-8510-a73355678573
 
-### ☀️ Light Mode
-*Clean professional look for daytime productivity*
-
 ### 💬 Message Reactions
 *Slack-like emoji reactions on any message*
 
