@@ -123,7 +123,7 @@ Switch between themes on the fly! Each theme transforms the entire app:
 - **Progress indicators** during upload
 - **10MB size limit** with validation
 - Files stored on **Cloudinary CDN**
-
+---
 
 ## 🖼️ Screenshots
 
@@ -214,9 +214,8 @@ Open [http://localhost:5173](http://localhost:5173) in your browser! 🎉
 
 
 
----
 
----
+
 
 ## 🔌 Backend Integration
 
@@ -311,14 +310,10 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 
 ### **Alauddin Ali**
 
-🎓 **BTech Computer Science Engineering Graduate**  
-💻 **Full Stack Developer**  
-🚀 **Aspiring FAANG Engineer**
 
 [![GitHub](https://img.shields.io/badge/GitHub-AlauddinAli-black?style=for-the-badge&logo=github)](https://github.com/AlauddinAli)
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-Connect-blue?style=for-the-badge&logo=linkedin)](https://linkedin.com/in/alauddin-ali)
 
-**Built with ❤️ in Mumbai, India**
+**Built with ❤️**
 
 *"Always learning. Always building. Always shipping."* 🚀
 
@@ -337,16 +332,6 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 
 ---
 
-## ⭐ Show Your Support
-
-If ChatForge helped you learn or build something awesome:
-
-⭐ **Star this repository** on GitHub!  
-🔀 **Fork it** to customize for your needs!  
-💬 **Share feedback** via Issues!  
-📢 **Tell others** about ChatForge!
-
----
 
 <div align="center">
 
