@@ -1,4 +1,4 @@
-# 🔥 ChatForge - Enterprise-Grade Real-Time Chat Platform
+#🔥ChatForge - Enterprise-Grade Real-Time Chat Platform
 
 <div align="center">
 
